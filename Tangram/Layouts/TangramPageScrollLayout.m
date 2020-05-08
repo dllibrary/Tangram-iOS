@@ -49,7 +49,6 @@
 
 @property   (nonatomic, strong) UIScrollView        *scrollView;
 @property   (nonatomic, strong) TangramPageControl       *pageControl;
-@property   (nonatomic, weak) id<TangramPageScrollLayoutDelegate> delegate;
 
 @property   (nonatomic, strong) NSString            *layoutIdentifier;
 @property   (nonatomic, strong) UIView              *firstCopyView;
@@ -96,7 +95,6 @@
     {
         self.willPush = YES;
         scrollView.contentInset = UIEdgeInsetsMake(0, [self.pageMargin tm_floatAtIndex:3] - self.scrollView.vv_left, 0, self.scrollView.vv_right - self.vv_width + self.loadMoreImageView.vv_width);
-        scrollView.pagingEnabled = NO;
         [scrollView setContentOffset:CGPointMake(loadX - self.loadMoreImageView.vv_width, scrollView.contentOffset.y)];
         
         __weak typeof(self) weakSelf = self;
@@ -106,9 +104,6 @@
             [strongSelf.tangramBus postEvent:event];
              //使用TangramBus发出事件
             scrollView.contentInset = UIEdgeInsetsMake(0, [strongSelf.pageMargin tm_floatAtIndex:3] - strongSelf.scrollView.vv_left, 0, strongSelf.scrollView.vv_right - strongSelf.vv_width);
-            if (strongSelf.pageWidth > 0) {
-                scrollView.pagingEnabled = YES;
-            }
             strongSelf.willPush = NO;
         });
     }
@@ -207,7 +202,6 @@
         _scrollView = [[UIScrollView alloc] init];
         _scrollView.scrollEnabled   = YES;
         _scrollView.scrollsToTop    = NO;
-        _scrollView.pagingEnabled   = YES;
         _scrollView.delegate        = self;
         _scrollView.showsHorizontalScrollIndicator  = NO;
         _scrollView.showsVerticalScrollIndicator    = NO;
@@ -270,6 +264,23 @@
 {
     _indicatorHeight = indicatorHeight;
 }
+
+- (void)setPageSize:(NSInteger)pageSize {
+    if (pageSize <= 0) {
+        _pageSize = 1;
+    } else {
+        _pageSize = pageSize;
+    }
+}
+
+- (void)setPagingEnabled:(BOOL)pagingEnabled {
+    self.scrollView.pagingEnabled = pagingEnabled;
+}
+
+- (NSInteger)getTotalPage:(NSInteger)modelCount {
+    return modelCount/self.pageSize + (modelCount%self.pageSize > 0 ? 1 : 0);
+}
+
 -(void)reCalculatePageControlSizeWithImage:(UIImage *)image
 {
      //保证是正方形
@@ -439,10 +450,11 @@
         elementHeight = MAX(elementHeight, CGRectGetMaxY(model.itemFrame) + model.marginBottom);
         lastElementModel = model;
     }
-    if (self.pageWidth > 0) {
-        self.scrollView.pagingEnabled = NO;
-    }
+
     self.vv_height = elementHeight;
+    for (UIView *view in self.scrollView.subviews) {
+        [view removeFromSuperview];
+    }
     self.scrollView.frame = CGRectMake([self.padding tm_floatAtIndex:3], 0, self.vv_width - [self.padding tm_floatAtIndex:3] - [self.padding tm_floatAtIndex:1], elementHeight);
     self.scrollView.contentSize = CGSizeMake(CGRectGetMaxX(lastElementModel.itemFrame) + lastElementModel.marginRight + self.scrollMarginLeft + self.scrollMarginRight, elementHeight) ;
     //设定加载更多的图片，只是在后面贴了一张图而已
@@ -479,10 +491,10 @@
                 
             }
             if (self.infiniteLoop) {
-                self.pageControl.numberOfPages = self.realCount;
+                self.pageControl.numberOfPages = [self getTotalPage:self.realCount];
             }
             else{
-                self.pageControl.numberOfPages = modelCount;
+                self.pageControl.numberOfPages = [self getTotalPage:modelCount];
             }
             [self.pageControl sizeToFit];
             if (self.indicatorHeight > 0) {
@@ -598,7 +610,13 @@
         return;
     }
     // 下一个页面，对总数取余的页码，循环滚动
-    NSInteger page = (self.currentPage + 1) % self.scrollView.subviews.count;
+    NSInteger page = (self.currentPage + 1) % [self getTotalPage:self.scrollView.subviews.count];
+    
+    [self jumpToPage:page];
+    
+}
+
+- (void)jumpToPage:(NSInteger)page {
     
     // 计算偏移量，索引值和scrollView宽度的积
     CGPoint offset = CGPointMake(page * self.scrollView.frame.size.width, 0);
@@ -625,7 +643,12 @@
     self.pageControl.currentPage = currentIndex;
     [self.scrollView setContentOffset:offset animated:YES];
     
+    if (self.delegate && [self.delegate conformsToProtocol:@protocol(TangramPageScrollLayoutDelegate)] && [self.delegate respondsToSelector:@selector(layout:atIndex:)])
+    {
+        [self.delegate layout:self atIndex:currentIndex];
+    }
 }
+
 - (void)setItemModels:(NSArray *)itemModels
 {
     
@@ -643,7 +666,7 @@
         [mutableItemModels tm_safeAddObject:self.firstItemModel];
         _itemModels = [mutableItemModels copy];
         //realCount仅在无限循环时使用
-        self.realCount = itemModels.count;
+        self.realCount = [self getTotalPage:itemModels.count];
     }
     NSMutableArray *mutableItemModels = [_itemModels mutableCopy];
     if (self.headerItemModel && ![self.itemModels containsObject:self.headerItemModel]) {
@@ -705,6 +728,7 @@
     if (self.autoScrollTime > 0.0 && self.itemModels.count > 2) {
         if (self.timer) {
             [self.timer fire];
+            return;
         }
         TangramPageScrollLayoutTimerAction *timerAction = [[TangramPageScrollLayoutTimerAction alloc]init];
         timerAction.selector = @selector(jumpToNextPage);

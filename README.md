@@ -1,7 +1,7 @@
 # Tangram - iOS
 
 Tangram is a UI Framework for building a fast and dynamic ScrollView. 
- 
+
 The system requirement for Tangram is iOS 7.0+
 
 [中文站点](http://tangram.pingguohe.net)
@@ -65,3 +65,10 @@ pod 'Tangram'
 
 - See [Getting Started Guide](https://github.com/alibaba/Tangram-iOS/blob/master/Docs/getting-started.md)
 - Or Open project in `TangramDemo` and execute `pod install` to see detail usage.
+
+# 修改记录
+
+- 修改tangram的angramPageScrollLayout，多次刷新scrollview内子视图不销毁，一直累加问题
+- 修改tangram的angramPageScrollLayout，多次刷新timer不销毁，时间回调调用多长问题
+- 添加style属性pageSize、pagingEnabled，分别控制每页滚动元素个数、整页滚动
+

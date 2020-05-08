@@ -8,6 +8,15 @@
 #import <UIKit/UIKit.h>
 #import "TangramLayoutProtocol.h"
 #import "TangramBus.h"
+
+@class TangramPageScrollLayout;
+@protocol TangramPageScrollLayoutDelegate <NSObject>
+//当滑动到某一页的时候会调用
+-(void)layout:(TangramPageScrollLayout *)layout atIndex:(NSUInteger)index;
+
+
+@end
+
 @interface TangramPageScrollLayout : UIView<TangramLayoutProtocol>
 typedef NS_ENUM(NSUInteger,IndicatorGravityType)
 {
@@ -63,6 +72,10 @@ typedef NS_ENUM(NSUInteger,IndicatorStyleType)
 @property   (nonatomic, assign) CGFloat             pageHeight;
 // Page Height for every element. If `pageWidth` is 0, This pageScroll will scroll by page(pagingEnabled = YES).
 @property   (nonatomic, assign) CGFloat             pageWidth;
+// 没有element数量默认为1
+@property   (nonatomic, assign) NSInteger           pageSize;
+// 整页滚动，默认NO
+@property   (nonatomic, assign) BOOL           pagingEnabled;
 // Whether need Indicator
 @property   (nonatomic, assign) BOOL                hasIndicator;
 // Whether indicator need auto hide.
@@ -87,11 +100,9 @@ typedef NS_ENUM(NSUInteger,IndicatorStyleType)
 //启用margin去重，留个坑，滚动布局暂时不做处理
 //@property   (nonatomic, assign) BOOL enableMarginDeduplication;
 
+@property   (nonatomic, weak) id<TangramPageScrollLayoutDelegate> delegate;
+
+// 跳到下一页
+- (void)jumpToPage:(NSInteger)page;
 @end
 
-@protocol TangramPageScrollLayoutDelegate <NSObject>
-//当滑动到某一页的时候会调用
--(void)layout:(TangramPageScrollLayout *)layout atIndex:(NSUInteger)index;
-
-
-@end

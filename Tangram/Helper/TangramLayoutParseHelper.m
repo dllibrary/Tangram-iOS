@@ -130,6 +130,8 @@
     layout.indicatorImg1 = [styleDict tm_stringForKey:@"indicatorImg1"];
     layout.indicatorImg2 = [styleDict tm_stringForKey:@"indicatorImg2"];
     layout.autoScrollTime = [styleDict tm_floatForKey:@"autoScroll"]/1000.0;
+    layout.pageSize = [styleDict tm_integerForKey:@"pageSize"];
+    layout.pagingEnabled = [styleDict tm_boolForKey:@"pagingEnabled"];
     layout.layoutLoadAPI = [dict tm_stringForKey:@"load"];
     layout.zIndex = [styleDict tm_floatForKey:@"zIndex"];
     if ([styleDict tm_stringForKey:@"infiniteMinCount"].length > 0) {
