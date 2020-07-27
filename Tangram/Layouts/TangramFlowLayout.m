@@ -668,33 +668,40 @@
         }
         self.vv_height =  CGRectGetMaxY(lastItemModel.itemFrame)  + lastItemMarginBottom;
         if (self.bgImgURL && self.bgImgURL.length > 0) {
-            self.bgImageView.frame = CGRectMake(0, 0, self.vv_width, self.vv_height);
-            [self sendSubviewToBack:self.bgImageView];
-            switch (self.bgScaleType) {
-                case TangramFlowLayoutBgImageScaleTypeFitStart:
-                {
-                    [[SDWebImageManager sharedManager].imageDownloader downloadImageWithURL:[NSURL URLWithString:self.bgImgURL] options:0 progress:nil completed:^(UIImage * _Nullable image, NSData * _Nullable data, NSError * _Nullable error, BOOL finished) {
-                        if (image) {
-                            
-                            self.bgImageView.image = image;
-                            CGFloat height = 0;
-                            if (image.size.width > 0) {
-                                // 等比例缩放
-                                height = (self.vv_width / image.size.width) * image.size.height;
-                            }
-                            self.bgImageView.vv_height = height;
-                            self.clipsToBounds = YES;
-                        }
-                    }];
-
+            if (![self.bgImgURL hasPrefix:@"http"]) {
+                UIImage *image = [UIImage imageNamed:self.bgImgURL];
+                if (image) {
+                    self.bgImageView.image = image;
+                    self.bgImageView.frame = CGRectMake(0, 0, self.vv_width, self.vv_width * image.size.height/image.size.width);
                 }
-                    break;
-                case TangramFlowLayoutBgImageScaleTypeFitXY:
-                default:
-                    [self.bgImageView sd_setImageWithURL:[NSURL URLWithString:self.bgImgURL]];
-                    break;
+            } else {
+                self.bgImageView.frame = CGRectMake(0, 0, self.vv_width, self.vv_height);
+                [self sendSubviewToBack:self.bgImageView];
+                switch (self.bgScaleType) {
+                    case TangramFlowLayoutBgImageScaleTypeFitStart:
+                    {
+                        [[SDWebImageManager sharedManager].imageDownloader downloadImageWithURL:[NSURL URLWithString:self.bgImgURL] options:0 progress:nil completed:^(UIImage * _Nullable image, NSData * _Nullable data, NSError * _Nullable error, BOOL finished) {
+                            if (image) {
+                                
+                                self.bgImageView.image = image;
+                                CGFloat height = 0;
+                                if (image.size.width > 0) {
+                                    // 等比例缩放
+                                    height = (self.vv_width / image.size.width) * image.size.height;
+                                }
+                                self.bgImageView.vv_height = height;
+                                self.clipsToBounds = YES;
+                            }
+                        }];
+
+                    }
+                        break;
+                    case TangramFlowLayoutBgImageScaleTypeFitXY:
+                    default:
+                        [self.bgImageView sd_setImageWithURL:[NSURL URLWithString:self.bgImgURL]];
+                        break;
+                }
             }
-            
         }
     }
     //加入组件化的卡片
